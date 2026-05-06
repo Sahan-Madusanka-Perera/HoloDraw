@@ -186,11 +186,29 @@ class UIOverlay:
         Returns:
             The frame with UI elements rendered on it.
         """
-        # Draw toolbar background
-        cv2.rectangle(frame, (0, 0), (self.frame_width, TOOLBAR_HEIGHT),
-                       UI_BG_COLOR, -1)
-        cv2.line(frame, (0, TOOLBAR_HEIGHT), (self.frame_width, TOOLBAR_HEIGHT),
-                 UI_BORDER_COLOR, 1)
+        # Draw glassmorphism floating toolbar background
+        tb_margin = 10
+        overlay = frame.copy()
+        
+        # Base glass pill
+        self._draw_rounded_rect(
+            overlay, 
+            (tb_margin, tb_margin), 
+            (self.frame_width - tb_margin, TOOLBAR_HEIGHT - tb_margin), 
+            UI_BG_COLOR, -1, 16
+        )
+        
+        # Blend for transparency
+        cv2.addWeighted(overlay, 0.85, frame, 0.15, 0, frame)
+        
+        # Sleek glossy border
+        self._draw_rounded_rect(
+            frame, 
+            (tb_margin, tb_margin), 
+            (self.frame_width - tb_margin, TOOLBAR_HEIGHT - tb_margin), 
+            UI_BORDER_COLOR, 1, 16
+        )
+
 
         # Render each toolbar item
         for item in self._items:
@@ -230,6 +248,30 @@ class UIOverlay:
 
     # --- Private rendering methods ---
 
+    def _draw_rounded_rect(
+        self, img: np.ndarray, pt1: Tuple[int, int], pt2: Tuple[int, int],
+        color: Tuple[int, int, int], thickness: int, r: int,
+    ) -> None:
+        """Helper to draw a rounded rectangle."""
+        x1, y1 = pt1
+        x2, y2 = pt2
+        if thickness < 0:
+            cv2.rectangle(img, (x1 + r, y1), (x2 - r, y2), color, -1)
+            cv2.rectangle(img, (x1, y1 + r), (x2, y2 - r), color, -1)
+            cv2.circle(img, (x1 + r, y1 + r), r, color, -1, cv2.LINE_AA)
+            cv2.circle(img, (x2 - r, y1 + r), r, color, -1, cv2.LINE_AA)
+            cv2.circle(img, (x1 + r, y2 - r), r, color, -1, cv2.LINE_AA)
+            cv2.circle(img, (x2 - r, y2 - r), r, color, -1, cv2.LINE_AA)
+        else:
+            cv2.line(img, (x1 + r, y1), (x2 - r, y1), color, thickness, cv2.LINE_AA)
+            cv2.line(img, (x1 + r, y2), (x2 - r, y2), color, thickness, cv2.LINE_AA)
+            cv2.line(img, (x1, y1 + r), (x1, y2 - r), color, thickness, cv2.LINE_AA)
+            cv2.line(img, (x2, y1 + r), (x2, y2 - r), color, thickness, cv2.LINE_AA)
+            cv2.ellipse(img, (x1 + r, y1 + r), (r, r), 180, 0, 90, color, thickness, cv2.LINE_AA)
+            cv2.ellipse(img, (x2 - r, y1 + r), (r, r), 270, 0, 90, color, thickness, cv2.LINE_AA)
+            cv2.ellipse(img, (x2 - r, y2 - r), (r, r), 0, 0, 90, color, thickness, cv2.LINE_AA)
+            cv2.ellipse(img, (x1 + r, y2 - r), (r, r), 90, 0, 90, color, thickness, cv2.LINE_AA)
+
     def _render_tool_button(
         self,
         frame: np.ndarray,
@@ -242,13 +284,13 @@ class UIOverlay:
 
         # Button background
         bg = UI_BG_COLOR_ALT if is_active else UI_BG_COLOR
-        cv2.rectangle(frame, (x, y), (x + w, y + h), bg, -1)
+        self._draw_rounded_rect(frame, (x, y), (x + w, y + h), bg, -1, 10)
 
         # Active highlight border
         if is_active:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), UI_HIGHLIGHT_COLOR, 2)
+            self._draw_rounded_rect(frame, (x, y), (x + w, y + h), UI_HIGHLIGHT_COLOR, 2, 10)
         else:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), UI_BORDER_COLOR, 1)
+            self._draw_rounded_rect(frame, (x, y), (x + w, y + h), UI_BORDER_COLOR, 1, 10)
 
         # Draw tool icon (simple geometric representations)
         cx, cy = x + w // 2, y + h // 2
@@ -320,12 +362,12 @@ class UIOverlay:
 
         # Background
         bg = UI_BG_COLOR_ALT if is_active else UI_BG_COLOR
-        cv2.rectangle(frame, (x, y), (x + w, y + h), bg, -1)
+        self._draw_rounded_rect(frame, (x, y), (x + w, y + h), bg, -1, 8)
 
         if is_active:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), UI_HIGHLIGHT_COLOR, 2)
+            self._draw_rounded_rect(frame, (x, y), (x + w, y + h), UI_HIGHLIGHT_COLOR, 2, 8)
         else:
-            cv2.rectangle(frame, (x, y), (x + w, y + h), UI_BORDER_COLOR, 1)
+            self._draw_rounded_rect(frame, (x, y), (x + w, y + h), UI_BORDER_COLOR, 1, 8)
 
         # Dot size proportional to the brush value
         dot_radius = max(item.value.value // 2, 2)
@@ -343,10 +385,10 @@ class UIOverlay:
 
         # Background
         bg = UI_BG_COLOR_ALT if filled else UI_BG_COLOR
-        cv2.rectangle(frame, (x, y), (x + w, y + h), bg, -1)
+        self._draw_rounded_rect(frame, (x, y), (x + w, y + h), bg, -1, 10)
 
         border_color = UI_HIGHLIGHT_COLOR if filled else UI_BORDER_COLOR
-        cv2.rectangle(frame, (x, y), (x + w, y + h), border_color, 2 if filled else 1)
+        self._draw_rounded_rect(frame, (x, y), (x + w, y + h), border_color, 2 if filled else 1, 10)
 
         # Icon: filled vs outline square
         icon_color = UI_HIGHLIGHT_COLOR if filled else UI_TEXT_COLOR
@@ -363,8 +405,8 @@ class UIOverlay:
     ) -> None:
         """Draw an action button (clear, save) with a text label."""
         x, y, w, h = item.x, item.y, item.w, item.h
-        cv2.rectangle(frame, (x, y), (x + w, y + h), UI_BG_COLOR, -1)
-        cv2.rectangle(frame, (x, y), (x + w, y + h), UI_BORDER_COLOR, 1)
+        self._draw_rounded_rect(frame, (x, y), (x + w, y + h), UI_BG_COLOR, -1, 10)
+        self._draw_rounded_rect(frame, (x, y), (x + w, y + h), UI_BORDER_COLOR, 1, 10)
 
         text_size = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.4, 1)[0]
         tx = x + (w - text_size[0]) // 2

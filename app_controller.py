@@ -53,7 +53,7 @@ class AppController:
         filled: Whether shapes are drawn filled or as outlines.
     """
 
-    def __init__(self, settings: Optional[AppSettings] = None):
+    def __init__(self, settings: Optional[AppSettings] = None, mode = "holodraw"):
         """
         Initialize all modules and set default application state.
 
@@ -61,6 +61,7 @@ class AppController:
             settings: Optional custom settings. Uses defaults if not provided.
         """
         self.settings = settings or AppSettings()
+        self.mode = mode
 
         # Core modules
         self.tracker = HandTracker(

@@ -72,15 +72,15 @@ COLOR_PALETTE = [
 ]
 
 # UI theme colors
-UI_BG_COLOR = (40, 40, 40)             # Toolbar background
-UI_BG_COLOR_ALT = (55, 55, 55)         # Alternate toolbar section background
-UI_BORDER_COLOR = (100, 100, 100)       # Subtle borders
-UI_HIGHLIGHT_COLOR = (255, 180, 0)      # Active selection highlight (amber)
-UI_TEXT_COLOR = (220, 220, 220)         # Primary text
-UI_TEXT_DIM_COLOR = (140, 140, 140)     # Secondary / dimmed text
-UI_CURSOR_COLOR = (0, 255, 128)        # On-screen cursor color
-UI_CURSOR_NAV_COLOR = (255, 200, 50)   # Cursor color during navigation mode
-UI_STATUS_BG = (30, 30, 30)            # Status bar background
+UI_BG_COLOR = (32, 28, 24)             # Deep slate toolbar background (#181C20)
+UI_BG_COLOR_ALT = (45, 40, 35)         # Lighter sleek background (#23282D)
+UI_BORDER_COLOR = (70, 60, 55)         # Subtle precise borders
+UI_HIGHLIGHT_COLOR = (255, 230, 0)     # Electric Cyan active highlight (#00E6FF)
+UI_TEXT_COLOR = (255, 255, 255)        # Pure white primary text
+UI_TEXT_DIM_COLOR = (170, 170, 170)    # Crisp secondary text
+UI_CURSOR_COLOR = (200, 50, 255)       # Neon pink on-screen cursor
+UI_CURSOR_NAV_COLOR = (255, 150, 0)    # Neon blue navigation cursor
+UI_STATUS_BG = (22, 18, 15)            # Very dark status bar background
 
 
 # ---------------------------------------------------------------------------
@@ -116,11 +116,11 @@ PINKY_TIP = 20
 
 # Minimum Euclidean distance (in pixels) below which thumb-tip and index-tip
 # are considered to be in a "pinch" gesture.
-PINCH_DISTANCE_THRESHOLD = 40
+PINCH_DISTANCE_THRESHOLD = 55
 
 # Number of consecutive frames a gesture must persist before it is accepted.
 # Prevents erratic gesture switching caused by brief misdetections.
-GESTURE_DEBOUNCE_FRAMES = 3
+GESTURE_DEBOUNCE_FRAMES = 2
 
 # Cooldown frames after an undo/redo gesture is triggered to prevent
 # repeated rapid-fire undo/redo from a single held gesture.
@@ -175,6 +175,27 @@ BRUSH_SIZE_Y_CENTER = 40
 # Minimum distance (pixels) the cursor must move between frames to register
 # as intentional movement and trigger freehand drawing. Reduces jitter.
 MIN_DRAW_DISTANCE = 3
+
+
+# ---------------------------------------------------------------------------
+# HoloPaint Settings
+# ---------------------------------------------------------------------------
+
+# Path to the trained U-Net edge detection model weights
+EDGE_MODEL_PATH = "holopaint_unet.pth"
+
+# Default edge detection threshold (0.0–1.0).
+# Lower values produce more edges; higher values produce fewer, stronger edges.
+HOLOPAINT_DEFAULT_THRESHOLD = 0.3
+
+# Step size for threshold adjustment via keyboard (+/- keys)
+HOLOPAINT_THRESHOLD_STEP = 0.05
+
+# Opacity of the edge outline overlay on the camera feed (0.0–1.0)
+HOLOPAINT_OUTLINE_OPACITY = 0.9
+
+# Opacity of user's paint strokes over the outline (0.0–1.0)
+HOLOPAINT_PAINT_OPACITY = 0.85
 
 
 # ---------------------------------------------------------------------------

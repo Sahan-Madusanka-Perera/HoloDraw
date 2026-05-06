@@ -15,6 +15,9 @@ import sys
 
 from config import AppSettings
 from app_controller import AppController
+from holopaint_controller import HoloPaintController
+
+from menu_screen import MenuScreen
 
 
 def parse_arguments() -> AppSettings:
@@ -25,7 +28,7 @@ def parse_arguments() -> AppSettings:
         Configured AppSettings with any command-line overrides applied.
     """
     parser = argparse.ArgumentParser(
-        prog="HoloBrush",
+        prog="HoloDraw",
         description="A hand gesture-based drawing application powered by MediaPipe.",
     )
     parser.add_argument(
@@ -58,17 +61,27 @@ def parse_arguments() -> AppSettings:
 def main() -> None:
     """Application entry point."""
     print("=" * 60)
-    print("  HoloBrush - Hand Gesture Drawing Application")
+    print("  HoloDraw - Hand Gesture Drawing Application")
     print("=" * 60)
     print()
 
     settings = parse_arguments()
-    controller = AppController(settings)
+    menu = MenuScreen(settings.camera_width, settings.camera_height)
+    mode = menu.run()
+
+    if mode is None:
+        return
+
+    # Route to the appropriate controller based on the selected mode
+    if mode == "HoloPaint":
+        controller = HoloPaintController(settings)
+    else:
+        controller = AppController(settings, mode=mode)
 
     try:
         controller.run()
     except KeyboardInterrupt:
-        print("\n[HoloBrush] Interrupted by user.")
+        print("\n[HoloDraw] Interrupted by user.")
         sys.exit(0)
 
 

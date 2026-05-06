@@ -1,1 +1,10 @@
 venv/
+__pycache__/
+.DS_Store
+*.pth
+data/
+*_comparison.png
+*_curves.png
+*_scales.png
+holodraw_*.png
+holopaint_*.png
