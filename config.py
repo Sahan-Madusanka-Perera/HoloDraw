@@ -32,6 +32,7 @@ class Gesture(Enum):
     SELECT = auto()     # Pinch (thumb + index close together) -> toolbar selection
     UNDO = auto()       # Fist (all fingers curled) -> undo last action
     REDO = auto()       # Thumb up only -> redo last undone action
+    ZOOM_MODE = auto()  # Index + middle + ring extended, pinky curled -> zoom/pan
 
 
 class BrushSize(Enum):
@@ -45,30 +46,37 @@ class BrushSize(Enum):
 # Color Definitions (BGR format for OpenCV)
 # ---------------------------------------------------------------------------
 
-# Drawing palette colors
+# Drawing palette colors (BGR format)
 COLOR_BLACK = (0, 0, 0)
+COLOR_DARK_GRAY = (64, 64, 64)
+COLOR_GRAY = (128, 128, 128)
+COLOR_LIGHT_GRAY = (192, 192, 192)
 COLOR_WHITE = (255, 255, 255)
-COLOR_RED = (60, 60, 220)
-COLOR_GREEN = (80, 180, 80)
-COLOR_BLUE = (200, 120, 50)
-COLOR_YELLOW = (50, 220, 240)
-COLOR_ORANGE = (40, 140, 255)
-COLOR_PURPLE = (180, 60, 160)
-COLOR_CYAN = (210, 200, 50)
-COLOR_PINK = (170, 120, 230)
 
-# Ordered palette for the toolbar
+COLOR_RED = (60, 60, 220)
+COLOR_DARK_RED = (30, 30, 139)
+COLOR_ORANGE = (40, 140, 255)
+COLOR_YELLOW = (50, 220, 240)
+COLOR_LIME = (50, 205, 50)
+
+COLOR_GREEN = (80, 180, 80)
+COLOR_DARK_GREEN = (0, 100, 0)
+COLOR_CYAN = (210, 200, 50)
+COLOR_TEAL = (128, 128, 0)
+COLOR_BLUE = (200, 120, 50)
+
+COLOR_DARK_BLUE = (139, 0, 0)
+COLOR_PURPLE = (180, 60, 160)
+COLOR_MAGENTA = (255, 0, 255)
+COLOR_PINK = (170, 120, 230)
+COLOR_BROWN = (42, 42, 165)
+
+# Ordered palette for the toolbar (20 colors)
 COLOR_PALETTE = [
-    COLOR_BLACK,
-    COLOR_RED,
-    COLOR_BLUE,
-    COLOR_GREEN,
-    COLOR_YELLOW,
-    COLOR_ORANGE,
-    COLOR_PURPLE,
-    COLOR_CYAN,
-    COLOR_PINK,
-    COLOR_WHITE,
+    COLOR_BLACK, COLOR_DARK_GRAY, COLOR_GRAY, COLOR_LIGHT_GRAY, COLOR_WHITE,
+    COLOR_RED, COLOR_DARK_RED, COLOR_ORANGE, COLOR_YELLOW, COLOR_LIME,
+    COLOR_GREEN, COLOR_DARK_GREEN, COLOR_CYAN, COLOR_TEAL, COLOR_BLUE,
+    COLOR_DARK_BLUE, COLOR_PURPLE, COLOR_MAGENTA, COLOR_PINK, COLOR_BROWN,
 ]
 
 # UI theme colors

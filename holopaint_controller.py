@@ -125,6 +125,14 @@ class HoloPaintController:
         self._pan_y: float = 0.0
         self._pan_step: int = 30    # Pixels to pan per key press
 
+        # Gesture-based zoom tracking
+        self._zoom_gesture_active: bool = False     # True while three-finger gesture is held
+        self._zoom_anchor: Optional[Tuple[int, int]] = None  # Hand position when zoom gesture started
+        self._zoom_dead_zone: int = 25              # Pixels of movement before zoom/pan activates
+        self._zoom_sensitivity: float = 0.008       # Zoom change per pixel of vertical movement
+        self._pan_sensitivity: float = 1.5          # Pan pixels per pixel of horizontal movement
+        self._zoom_direction: str = ""               # Current zoom direction for visual feedback
+
         # Application state
         self._state: str = self.STATE_IMAGE_SELECT
         self._fps: float = 0.0
@@ -426,8 +434,16 @@ class HoloPaintController:
         h, w = display.shape[:2]
 
         # HoloPaint mode indicator
-        mode_label = "FILL MODE" if self._fill_mode else "HOLOPAINT"
-        mode_color = (0, 200, 0) if self._fill_mode else (0, 255, 255)
+        if self._zoom_gesture_active:
+            mode_label = "ZOOM MODE"
+            mode_color = (0, 220, 220)  # Cyan for zoom
+        elif self._fill_mode:
+            mode_label = "FILL MODE"
+            mode_color = (0, 200, 0)
+        else:
+            mode_label = "HOLOPAINT"
+            mode_color = (0, 255, 255)
+
         cv2.putText(
             display, mode_label, (w - 180, 30),
             cv2.FONT_HERSHEY_SIMPLEX, 0.6, mode_color, 2, cv2.LINE_AA,
@@ -441,6 +457,13 @@ class HoloPaintController:
                 cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 220, 220), 1, cv2.LINE_AA,
             )
             self._draw_minimap(display)
+
+        # Zoom gesture hint (show briefly when not zoomed)
+        if self._zoom_gesture_active and self._zoom <= 1.01:
+            cv2.putText(
+                display, "Move hand UP to zoom in", (w // 2 - 130, h - 60),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 220, 220), 1, cv2.LINE_AA,
+            )
 
         # --- Camera PiP preview (so users can see their hand) ---
         self._draw_camera_pip(display, frame)
@@ -688,6 +711,19 @@ class HoloPaintController:
         # Always track cursor position for keyboard-triggered fill
         self._last_cursor_pos = cursor_pos
 
+        # --- Zoom mode gesture (three-finger: index+middle+ring) ---
+        # This is checked first and handled independently of fill/paint mode.
+        if gesture == Gesture.ZOOM_MODE:
+            self._finalize_drawing_state()
+            self._handle_zoom_gesture(cursor_pos)
+            return
+        else:
+            # Exiting zoom mode: reset anchor
+            if self._zoom_gesture_active:
+                self._zoom_gesture_active = False
+                self._zoom_anchor = None
+                self._zoom_direction = ""
+
         if self._fill_mode:
             # --- Fill mode ---
             # All gestures just move the cursor, EXCEPT:
@@ -844,6 +880,85 @@ class HoloPaintController:
         elif item.action == "save":
             self._save_painting()
 
+    def _handle_zoom_gesture(self, cursor_pos: Tuple[int, int]) -> None:
+        """
+        Handle the three-finger zoom gesture.
+
+        When the user first raises three fingers (index+middle+ring), the current
+        hand position is recorded as the "anchor". While holding the gesture:
+        - Moving hand UP from anchor → zoom in
+        - Moving hand DOWN from anchor → zoom out
+        - Moving hand LEFT from anchor → pan left
+        - Moving hand RIGHT from anchor → pan right
+
+        A dead zone around the anchor prevents accidental zoom/pan from jitter.
+        The anchor resets each time the gesture is released and re-engaged.
+        """
+        if not self._zoom_gesture_active:
+            # First frame of zoom gesture: set the anchor point
+            self._zoom_gesture_active = True
+            self._zoom_anchor = cursor_pos
+            self._zoom_direction = ""
+            return
+
+        if self._zoom_anchor is None:
+            return
+
+        # Calculate displacement from anchor
+        dx = cursor_pos[0] - self._zoom_anchor[0]
+        dy = cursor_pos[1] - self._zoom_anchor[1]
+
+        # Determine dominant direction (only act outside dead zone)
+        abs_dx = abs(dx)
+        abs_dy = abs(dy)
+
+        if max(abs_dx, abs_dy) < self._zoom_dead_zone:
+            self._zoom_direction = ""
+            return
+
+        if self._zoom <= 1.01:
+            # Not zoomed in yet: vertical movement controls zoom level
+            if abs_dy > self._zoom_dead_zone:
+                zoom_delta = -dy * self._zoom_sensitivity
+                new_zoom = self._zoom + zoom_delta
+                self._zoom = max(self._zoom_min, min(self._zoom_max, new_zoom))
+                self._zoom_direction = "zoom_in" if dy < 0 else "zoom_out"
+        else:
+            # Already zoomed in: vertical = zoom, horizontal = pan
+            # Apply both simultaneously for fluid control
+            if abs_dy > self._zoom_dead_zone:
+                zoom_delta = -dy * self._zoom_sensitivity
+                new_zoom = self._zoom + zoom_delta
+                self._zoom = max(self._zoom_min, min(self._zoom_max, new_zoom))
+
+                if self._zoom <= 1.01:
+                    self._pan_x = 0.0
+                    self._pan_y = 0.0
+
+            if abs_dx > self._zoom_dead_zone:
+                pan_delta_x = dx * self._pan_sensitivity
+                self._pan_x = max(
+                    -(self.engine.width // 2),
+                    min(self.engine.width // 2, self._pan_x + pan_delta_x),
+                )
+
+            if abs_dy > self._zoom_dead_zone and abs_dy <= abs_dx:
+                # Vertical pan when horizontal movement dominates
+                pan_delta_y = dy * self._pan_sensitivity
+                self._pan_y = max(
+                    -(self.engine.height // 2),
+                    min(self.engine.height // 2, self._pan_y + pan_delta_y),
+                )
+
+            # Set direction label for cursor feedback
+            if abs_dy > abs_dx:
+                self._zoom_direction = "zoom_in" if dy < 0 else "zoom_out"
+            else:
+                self._zoom_direction = "pan_right" if dx > 0 else "pan_left"
+
+        # Reset anchor to current position for continuous control
+        self._zoom_anchor = cursor_pos
+
     def _finalize_drawing_state(self) -> None:
         """Clean up any in-progress drawing state."""
         if self._was_drawing:
@@ -858,7 +973,33 @@ class HoloPaintController:
         gesture: Gesture,
     ) -> None:
         """Draw a visual cursor for HoloPaint mode."""
-        if self._fill_mode:
+        if gesture == Gesture.ZOOM_MODE or self._zoom_gesture_active:
+            # Zoom mode: magnifying glass cursor with direction indicator
+            color = (0, 220, 220)  # Cyan for zoom
+            cx, cy = pos
+            # Outer circle (lens)
+            cv2.circle(frame, pos, 18, color, 2, cv2.LINE_AA)
+            # Handle
+            cv2.line(frame, (cx + 13, cy + 13), (cx + 22, cy + 22), color, 3, cv2.LINE_AA)
+            # Plus/minus inside lens based on direction
+            if self._zoom_direction == "zoom_in":
+                cv2.line(frame, (cx - 8, cy), (cx + 8, cy), color, 2, cv2.LINE_AA)
+                cv2.line(frame, (cx, cy - 8), (cx, cy + 8), color, 2, cv2.LINE_AA)
+            elif self._zoom_direction == "zoom_out":
+                cv2.line(frame, (cx - 8, cy), (cx + 8, cy), color, 2, cv2.LINE_AA)
+            elif self._zoom_direction in ("pan_left", "pan_right"):
+                # Arrow indicator for pan direction
+                arrow_dir = -1 if self._zoom_direction == "pan_left" else 1
+                cv2.arrowedLine(
+                    frame, (cx - 6 * arrow_dir, cy), (cx + 6 * arrow_dir, cy),
+                    color, 2, cv2.LINE_AA, tipLength=0.5,
+                )
+            # Label
+            cv2.putText(
+                frame, "ZOOM", (cx + 24, cy - 4),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.4, color, 1, cv2.LINE_AA,
+            )
+        elif self._fill_mode:
             # Fill mode: crosshair cursor
             size = 14
             color = (0, 200, 0)  # Green for fill mode
@@ -1052,7 +1193,11 @@ class HoloPaintController:
             self._pan_x = 0.0
             self._pan_y = 0.0
             self._fill_mode = False
+            self._zoom_gesture_active = False
+            self._zoom_anchor = None
+            self._zoom_direction = ""
             print("[HoloPaint] Painting mode active. Use gestures to paint!")
+            print("[HoloPaint] Three fingers (index+middle+ring) = Zoom/Pan gesture")
             print("[HoloPaint] F=Toggle Fill | I/O=Zoom | Arrows=Pan | 0=Reset")
             print("[HoloPaint] N=New Image | S=Save | T=Adjust Threshold | Q=Quit")
 

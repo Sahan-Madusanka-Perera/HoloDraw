@@ -98,16 +98,26 @@ class UIOverlay:
 
         # --- Color palette ---
         swatch_diameter = COLOR_SWATCH_RADIUS * 2
-        for color in COLOR_PALETTE:
+        start_x = x_cursor
+        cols = (len(COLOR_PALETTE) + 1) // 2
+        
+        for idx, color in enumerate(COLOR_PALETTE):
+            col = idx % cols
+            row = idx // cols
+            
+            cx = start_x + col * (swatch_diameter + COLOR_SWATCH_MARGIN)
+            cy = 25 if row == 0 else 55
+            
             self._items.append(ToolbarItem(
-                x=x_cursor,
-                y=COLOR_SWATCH_Y_CENTER - COLOR_SWATCH_RADIUS,
+                x=cx,
+                y=cy - COLOR_SWATCH_RADIUS,
                 w=swatch_diameter,
                 h=swatch_diameter,
                 action="color",
                 value=color,
             ))
-            x_cursor += swatch_diameter + COLOR_SWATCH_MARGIN
+            
+        x_cursor = start_x + cols * (swatch_diameter + COLOR_SWATCH_MARGIN)
 
         # Separator space
         x_cursor += TOOL_BUTTON_MARGIN * 2

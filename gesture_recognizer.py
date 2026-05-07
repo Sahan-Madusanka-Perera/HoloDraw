@@ -181,6 +181,12 @@ class GestureRecognizer:
         if index and middle and not ring and not pinky:
             return Gesture.NAVIGATE
 
+        # Index + Middle + Ring up, pinky down (thumb ignored): Zoom mode.
+        # This three-finger gesture is physically distinct from DRAW (one finger)
+        # and NAVIGATE (two fingers), so it won't trigger accidentally.
+        if index and middle and ring and not pinky:
+            return Gesture.ZOOM_MODE
+
         # All fingers extended: Open palm (idle / stop)
         if all(states):
             return Gesture.IDLE

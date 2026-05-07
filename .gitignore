@@ -8,3 +8,9 @@ data/
 *_scales.png
 holodraw_*.png
 holopaint_*.png
+report/
+*.aux
+*.log
+*.out
+*.toc
+*.pdf

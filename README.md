@@ -1,6 +1,6 @@
-# HoloDraw - Hand Gesture Drawing Application
+# HoloFun - Hand Gesture Drawing & Painting Application
 
-A real-time drawing application controlled through hand gestures, similar to MS Paint. Built with Python, MediaPipe (deep learning-based hand tracking), and OpenCV.
+A real-time, interactive drawing and colouring application controlled through hand gestures. Built with Python, MediaPipe (AI-based hand tracking), and a custom-trained U-Net edge detection model.
 
 ## Modes
 
@@ -16,22 +16,20 @@ Fetch a random image from the internet or upload your own, then a **trained U-Ne
 - **Freehand Drawing** - Draw freely with adjustable brush thickness
 - **Geometric Shapes** - Line, Rectangle, Circle, and Ellipse tools
 - **Eraser** - Remove portions of the drawing
-- **Color Palette** - 10 preset colors available on the toolbar
+- **Color Palette** - 20 distinct preset colors available on a 2-row toolbar
 - **Brush Sizes** - Small, Medium, and Large thickness options
 - **Fill Toggle** - Switch between filled and outline shapes
 - **Undo / Redo** - Full action history (up to 30 states)
-- **Save to File** - Export drawings as timestamped PNG files
-- **Clear Canvas** - Reset the entire drawing surface
+- **Zoom & Pan** - Gesture-controlled 5x zoom and panning for high-detail work
 - **Real-time FPS Display** - Performance monitoring in the status bar
 
 ### HoloPaint Features
 - **Random Image Fetch** - Get random photos from Lorem Picsum (no API key needed)
 - **Image Upload** - Load any image from your computer
-- **U-Net Edge Detection** - Deep learning model extracts clean outlines
-- **Canny Fallback** - Works even without the trained model (uses OpenCV Canny)
-- **Adjustable Threshold** - Fine-tune edge sensitivity with +/- keys
-- **Gesture Painting** - Paint over outlines using the same gesture system
+- **Advanced Edge Extraction** - Multi-scale tiled inference + Hybrid Canny fusion
+- **Gap Bridging** - Skeleton-aware endpoint bridging to ensure closed, paintable regions
 - **Two-Layer Canvas** - Base outlines (non-erasable) + user paint overlay
+- **Flood Fill** - One-tap region filling using the SELECT gesture
 
 ## Requirements
 
@@ -92,11 +90,12 @@ A menu screen appears with two modes:
 | Gesture | How To | Action |
 |---------|--------|--------|
 | **Index finger only** | Extend only the index finger | Draw on the canvas |
-| **Index + Middle fingers** | Extend index and middle fingers (peace sign) | Move cursor without drawing |
-| **Pinch** | Touch thumb tip to index finger tip | Select a tool, color, or button |
-| **Fist** | Close all fingers into a fist | Undo the last action |
-| **Thumb up** | Extend only the thumb | Redo the last undone action |
-| **Open palm** | Extend all five fingers | Idle / stop current action |
+| **Index + Middle** | Extend index and middle fingers | Navigate (move cursor) |
+| **Pinch** | Touch thumb tip to index tip | Select tool / Flood fill |
+| **Index + Middle + Ring** | Extend three fingers (curled pinky) | **Zoom & Pan mode** |
+| **Fist** | Close all fingers | Undo |
+| **Thumb up** | Extend only the thumb | Redo |
+| **Open palm** | Extend all five fingers | Idle / Stop |
 
 ## HoloPaint Keyboard Controls
 
@@ -165,7 +164,7 @@ The U-Net is a fully convolutional encoder-decoder network with skip connections
 - **Erratic gesture switching**: Make deliberate gestures. The system includes debouncing.
 - **Low FPS**: Try `--width 640 --height 480`.
 - **Camera not opening**: Check that no other app is using the webcam.
-- **Edge detection slow**: The U-Net runs on CPU. First inference may take 1-2 seconds.
+- **Edge detection slow**: The U-Net runs on CPU. First inference (including tiled processing) may take 200-400ms on Apple M4 Pro hardware.
 - **No trained model**: HoloPaint will use Canny edge detection as fallback.
 
 ## License
